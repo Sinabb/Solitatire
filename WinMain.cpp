@@ -120,6 +120,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lPara
         return DefWindowProc(hwnd, message, wParam, lParam);
         break;
     }
+
     return 0;
 }
 
