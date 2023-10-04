@@ -1,126 +1,113 @@
-#include <Windows.h>
+#include <windows.h>
 #include <gdiplus.h>
-#include <list>
-#include "Card.h"
+#include "GameLogic.h"
 
-#pragma comment (lib, "Gdiplus.lib")
+#pragma comment(lib, "Gdiplus.lib")
 
 using namespace Gdiplus;
 
-const wchar_t gClassName[] = L"SolitaireMyWindowClass";
+const wchar_t gClassName[] = L"SolitaireWindowClass";
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
 // Test
-std::list<solitaire::Card> myDeck;
+// std::list<solitaire::Card> myDeck;
+solitaire::GameLogic gLogic;
 
-int WINAPI WinMain(_In_ HINSTANCE hinstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nshowcmd)
+int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpcmdLine, _In_ int nShowcmd)
 {
-    GdiplusStartupInput gsi;
-    ULONG_PTR token;
-    GdiplusStartup(&token, &gsi, nullptr);
+	GdiplusStartupInput gsi;
+	ULONG_PTR token;
+	GdiplusStartup(&token, &gsi, nullptr);
 
-    // Test
-    myDeck.push_back(solitaire::Card(solitaire::Type::Bear, 0, 0));
-    myDeck.push_back(solitaire::Card(solitaire::Type::Dragon, 150, 0));
-    myDeck.push_back(solitaire::Card(solitaire::Type::Wolf, 300, 0));
 
-    WNDCLASSEX wc{};
-    ZeroMemory(&wc, sizeof(WNDCLASSEX));
-    wc.style = CS_HREDRAW | CS_VREDRAW;
-    wc.lpszClassName = gClassName;
-    wc.hInstance = hinstance;
-    wc.lpfnWndProc = WindowProc;
-    wc.cbSize = sizeof(WNDCLASSEX);
 
-    wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
-    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 
-    if (!RegisterClassEx(&wc))
-    {
-        MessageBox(nullptr, L"Failed to register", L"Error", MB_OK);
-        return 0;
-    }
+	WNDCLASSEX wc;
+	ZeroMemory(&wc, sizeof(WNDCLASSEX));
+	wc.style = CS_HREDRAW | CS_VREDRAW;
+	wc.lpszClassName = gClassName;
+	wc.hInstance = hInstance;
+	wc.lpfnWndProc = WindowProc;
+	wc.cbSize = sizeof(WNDCLASSEX);
+	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+	wc.hbrBackground = (HBRUSH)COLOR_WINDOW;
 
-    RECT wr = { 0,0,1024,768 };
-    AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
-    HWND hwnd = CreateWindowEx
-    (
-        0,
-        gClassName,
-        L"Solitatire Game",
-        WS_OVERLAPPEDWINDOW,
-        CW_USEDEFAULT, CW_USEDEFAULT,
-        wr.right - wr.left,
-        wr.bottom - wr.top,
-        NULL,
-        NULL,
-        hinstance,
-        NULL
-    );
+	if (!RegisterClassEx(&wc))
+	{
+		MessageBox(nullptr, L"Failed to register!", L"Error", MB_OK);
+		return 0;
+	}
 
-    if (hwnd == nullptr)
-    {
-        MessageBox(nullptr, L"Failed to create", L"Error", MB_OK);
-        return 0;
-    }
+	RECT wr = { 0,0,1024,768 };
+	AdjustWindowRect(&wr, WS_OVERLAPPEDWINDOW, FALSE);
+	HWND hwnd = CreateWindowEx(0, gClassName, L"Solitatire Game", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, wr.right - wr.left, wr.bottom - wr.top, NULL, NULL, hInstance, NULL);
 
-    ShowWindow(hwnd, nshowcmd);
-    UpdateWindow(hwnd);
+	if (hwnd == nullptr)
+	{
+		MessageBox(nullptr, L"Failed to create!", L"Error", MB_OK);
+		return 0;
+	}
 
-    MSG msg;
-    while (GetMessage(&msg, NULL, 0, 0))
-    {
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
-    }
+	gLogic.Init(hwnd);
 
-    myDeck.clear();
+	ShowWindow(hwnd, nShowcmd);
+	UpdateWindow(hwnd);
 
-    GdiplusShutdown(token);
-    return static_cast<int>(msg.wParam);
+	MSG msg;
+	while (GetMessage(&msg, NULL, 0, 0))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
 
+	//myDeck.clear();
+	gLogic.Release();
+
+	GdiplusShutdown(token);
+	return static_cast<int>(msg.wParam);
 }
 
-void OnPAint(HWND hwnd)
+void OnPaint(HWND hwnd)
 {
-    PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(hwnd, &ps);
+	PAINTSTRUCT ps;
+	HDC hdc = BeginPaint(hwnd, &ps);
 
-    Graphics graphics(hdc);
+	Graphics graphics(hdc);
 
-    // Test
-    for (auto& card : myDeck)
-    {
-        card.Flip(true);
+	gLogic.Draw(graphics);
 
-        card.Draw(graphics);
-    }
-
-
-    EndPaint(hwnd, &ps);
+	EndPaint(hwnd, &ps);
 }
 
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT WindowProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
-    switch (message)
-    {
-    case WM_PAINT:
-    {
-        OnPAint(hwnd);
-        break;
-    }
-    case WM_CLOSE:
-        DestroyWindow(hwnd);
-        break;
-    case WM_DESTROY:
-        PostQuitMessage(0);
-        break;
-    default:
-        return DefWindowProc(hwnd, message, wParam, lParam);
-        break;
-    }
-
-    return 0;
+	switch (message)
+	{
+	case WM_LBUTTONUP:
+	{
+		gLogic.OnClick(LOWORD(lparam), HIWORD(lparam));
+	}
+	break;
+	case WM_PAINT:
+	{
+		OnPaint(hwnd);
+	}
+	break;
+	case WM_CLOSE:
+	{
+		DestroyWindow(hwnd);
+	}
+	break;
+	case WM_DESTROY:
+	{
+		PostQuitMessage(0);
+	}
+	break;
+	default:
+	{
+		return DefWindowProc(hwnd, message, wparam, lparam);
+	}
+	}
+	return 0;
 }
-
