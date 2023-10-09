@@ -57,4 +57,5 @@ void Card::Invalidate()
 	RECT rct{ mX, mY, static_cast<LONG>(mX + mFront->GetWidth()), static_cast<LONG>(mY + mFront->GetHeight()) };
 	InvalidateRect(mHwnd, &rct, false);
 
+
 }
